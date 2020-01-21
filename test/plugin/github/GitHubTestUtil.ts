@@ -30,57 +30,57 @@ export class MockDataCat {
   repo: any = {
     full: () => ({
       stars: [
-        {
-          login: 'testLogin',
-          time: new Date(0),
-        },
+        // {
+        //   login: 'testLogin',
+        //   time: new Date(0),
+        // },
       ],
       forks: [
-        {
-          login: 'testLogin',
-          time: new Date(0),
-        },
+        // {
+        //   login: 'testLogin',
+        //   time: new Date(0),
+        // },
       ],
       issues: [
-        {
-          id: 1,
-          createAt: new Date(0),
-          updateAt: new Date(0),
-          closedAt: new Date(0),
-          comments: [
-            {
-              login: 'testLogin',
-              createAt: new Date(0),
-            },
-          ],
-        },
+        // {
+        //   id: 1,
+        //   createdAt: new Date(0),
+        //   updatedAt: new Date(0),
+        //   closedAt: new Date(0),
+        //   comments: [
+        //     {
+        //       login: 'testLogin',
+        //       createdAt: new Date(0),
+        //     },
+        //   ],
+        // },
       ],
       pulls: [
-        {
-          id: 1,
-          createAt: new Date(0),
-          updateAt: new Date(0),
-          closedAt: new Date(0),
-          mergedAt: new Date(0),
-          comments: [
-            {
-              login: 'testLogin',
-              createAt: new Date(0),
-            },
-          ],
-          reviewComments: [
-            {
-              login: 'testLogin',
-              createAt: new Date(0),
-            },
-          ],
-        },
+        // {
+        //   id: 1,
+        //   createdAt: new Date(0),
+        //   updatedAt: new Date(0),
+        //   closedAt: new Date(0),
+        //   mergedAt: new Date(0),
+        //   comments: [
+        //     {
+        //       login: 'testLogin',
+        //       createdAt: new Date(0),
+        //     },
+        //   ],
+        //   reviewComments: [
+        //     {
+        //       login: 'testLogin',
+        //       createdAt: new Date(0),
+        //     },
+        //   ],
+        // },
       ],
       contributors: [
-        {
-          login: 'testLogin',
-          time: new Date(0),
-        },
+        // {
+        //   login: 'testLogin',
+        //   time: new Date(0),
+        // },
       ],
     }),
   };
@@ -93,11 +93,30 @@ export class MockDataCat {
  * Thus by checking values in "testResult" we can know whether function work normally
  */
 export class MockRawClient {
+  public app: any;
+  constructor(app: any) {
+    this.app = app;
+  }
   // store test result
   testResult: any[] = [];
   // mock origin API
+  // if api is called, save calling param in a array,
+  // then send a webhook event as if it's a real github server
   issues: any = {
-    create: issue => this.testResult.push([ 'issues.create', issue ]),
+    create: async issue => {
+      this.testResult.push([ 'issues.create', issue ]);
+      await sendToWebhooks(this.app, 'issues.opened', {
+        ...getPayload('issues.opened'),
+        issue,
+      });
+    },
+    // update: async issue => {
+    //   this.testResult.push([ 'issues.update', issue ]);
+    //   await sendToWebhooks(this.app, 'issues.opened', {
+    //     ...getPayload('issues.opened'),
+    //     issue,
+    //   });
+    // },
     update: issue => this.testResult.push([ 'issues.update', issue ]),
     createComment: issue => this.testResult.push([ 'issues.createComment', issue ]),
     addAssignees: issue => this.testResult.push([ 'issues.addAssignees', issue ]),
@@ -149,7 +168,7 @@ export class MockGitHubApp extends GitHubApp {
   public async addRepo(name: string, _payload: any): Promise<void> {
     // set token before any request
     const githubClient = new GitHubClient(name, this.id, this.app, this.dataCat, this);
-    githubClient.setRawClient(new MockRawClient() as any);
+    githubClient.setRawClient(new MockRawClient(this.app) as any);
     this.clientMap.set(name, async () => githubClient);
   }
 }
